@@ -7,48 +7,62 @@ const bot = new telegramBot(token, { polling: true })
 
 
 
-// const inline_keyboard = [
-//   [{
-// text: 'forward',
-// callback_data: 'forward' 
-//   },
-//   {
-// text: 'reply',
-// callback_data: 'reply' 
-//   }],
-//   [{
-// text: 'edit',
-// callback_data: 'edit' 
-//   },
-//   {
-// text: 'delete',
-// callback_data: 'delete' 
-//   }]
-// ]
+const inline_keyboard = [
+  [{
+text: 'forward',
+callback_data: 'forward' 
+  },
+  {
+text: 'reply',
+callback_data: 'reply' 
+  }],
+  [{
+text: 'edit',
+callback_data: 'edit' 
+  },
+  {
+text: 'delete',
+callback_data: 'delete' 
+  }]
+]
 
-// bot.on('callback_query', query => {
+bot.on('callback_query', query => {
 
-// const {chat, message_id, text} = query.message
+const {chat, message_id, text} = query.message
 
-//   switch (query.data) {
-//     case 'forward':
-//       bot.forwardMessage(chat.id, chat.id, message_id)
-//       break
-//   }
+  switch (query.data) {
+    case 'forward':
+      bot.forwardMessage(chat.id, chat.id, message_id)
+      break
+    case 'reply':
+        bot.sendMessage(chat.id, 'Отправим сообщение' , {
+            raply_to_messange_id: message_id
+        })
+        break
 
-// bot.answerCallbackQuery({
-//   callback_query_id: query.id
-// })
-// })
+    case 'edit':
+   
+      bot.editMessageText( `${text} (edited)`, {
+            chat_id: chat.id,
+            message_id: message_id
+        })
+        break
+        
+  }
 
-// bot.onText(/\/start/, (msg, [source, match]) => {
-//   const chatID = msg.chat.id
-//   bot.sendMessage(chatID, 'keyboard', {
-//     reply_markup: {
-//       inline_keyboard
-//     }
-//   })
-// })
+bot.answerCallbackQuery({
+  callback_query_id: query.id
+})
+})
+
+bot.onText(/\/start/, (msg, [source, match]) => {
+  const chatID = msg.chat.id
+  bot.sendMessage(chatID, 'keyboard', {
+    reply_markup: {
+      inline_keyboard
+    }
+  })
+})
 
 
 
