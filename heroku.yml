@@ -1,5 +1,2 @@
-build:
-    docker:
-      tele-bot: Dockerfile
-  run:
-    tele-bot: npm start:ci
+run:
+  tele-bot: ./start.sh
