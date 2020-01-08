@@ -1,0 +1,38 @@
+version: '3.7'
+networks:
+  default:
+    external:
+      name: bridge
+
+services:
+  psql:
+    container_name: psql
+    build:
+        context: ./
+        dockerfile: ./db.Dockerfile
+    restart: always
+    network_mode: bridge
+    ports:
+      - '6588:5432'
+    expose:
+      - '5432'
+    logging:
+        options:
+            max-size: '50m'
+
+  tele-bot:
+    container_name: tele-bot
+    links:
+      - psql
+    build:
+        context: ./
+        dockerfile: ./Dockerfile
+        target: test-pixel-api
+    image: tele-bot
+    restart: always
+    command: npm start
+    network_mode: bridge
+    ports:
+      - '5555:5555'
+    expose:
+      - '5555'
