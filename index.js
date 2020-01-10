@@ -17,23 +17,46 @@ bot.onText(/\/get/, (msg) => {
   let urls = [];
   const { id } = msg.chat
 
-  db.selectUrls(`chat_id = ${id}`).then(DBResponse => {
-    DBResponse.rows.map(each => urls.push(each.web_sites))
-  });
-  interval = setInterval(() => {
+  // db.selectUrls(`chat_id = ${id}`).then(DBResponse => {
+  //   DBResponse.rows.map(each => urls.push(each.url))
+  // });
+  db.selectUrls(`chat_id = ${id}`).then((DBResponse) => {
+    DBResponse.rows.map(each => urls.push({ url: each.url, timeout: each.timeout}))
+    console.log(DBResponse.rows[0].timeout)
+
     urls.forEach(web => {
-      fetch(web)
+      console.log(web)
+      interval = setInterval(() => {
+      fetch(web.url)
         .then(response => {
-          console.log(id + ' ' + web + ' ' + response.status + ' ' + response.statusText);
-          bot.sendMessage(id, `status code of ${web} is ${response.status} ${response.statusText} `, {
+          console.log(id + ' ' + web.url + ' ' + response.status + ' ' + response.statusText);
+          bot.sendMessage(id, `status code of ${web.url} is ${response.status} ${response.statusText} `, {
             disable_web_page_preview: true
           });
         }).catch(error => {
           console.log(id + ' ' + web + ' ' + error.message)
           bot.sendMessage(id, help.debug(error.message) + '   !!! CHECK YOUR URL!!!')
         })
-    });
-  }, 15000);
+    }, web.timeout, console.log(web.timeout)
+    );
+  });
+  })
+  
+  // interval = setInterval(() => {
+  //   urls.forEach(web => {
+  //     fetch(web)
+  //       .then(response => {
+  //         console.log(id + ' ' + web + ' ' + response.status + ' ' + response.statusText);
+  //         bot.sendMessage(id, `status code of ${web} is ${response.status} ${response.statusText} `, {
+  //           disable_web_page_preview: true
+  //         });
+  //       }).catch(error => {
+  //         console.log(id + ' ' + web + ' ' + error.message)
+  //         bot.sendMessage(id, help.debug(error.message) + '   !!! CHECK YOUR URL!!!')
+  //       })
+  //   });
+  // }, console.log('sxsxsxsx', interval) 
+  //  );
 });
 
 bot.onText(/\/start/, (msg) => {
@@ -69,7 +92,7 @@ bot.onText(/\/myurls/, (msg) => {
   const { id } = msg.chat
   db.selectUrls(`chat_id = ${id}`).then(response => {
     response.rows.map(each => {
-      bot.sendMessage(id, help.debug(each.web_sites), {
+      bot.sendMessage(id, help.debug(each.url), {
         disable_web_page_preview: true
       })
     });

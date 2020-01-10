@@ -19,16 +19,23 @@ module.exports = {
     client.end();
   },
 
-  async insertTeleBot(){
-    await client.query(`INSERT INTO tele_bot (chat_id, web_sites) VALUES (11, 'website')  RETURNING *`);
+   insertTeleBot(){
+    return client.query(`INSERT INTO tele_bot (chat_id, web_sites) VALUES (11, 'website')  RETURNING *`);
   },
 
 
-   async selectUrls(condition, column = '*', table = 'tele_bot') {
+    selectUrls(condition, column = '*', table = 'tele_bot') {
     return client.query(`SELECT ${column} FROM  ${table} WHERE  ${condition}`);
   },
 
-  async insertUrl(chatId, url) {
+  selectTimeout(condition) {
+    return client.query(`SELECT timeout FROM  tele_bot WHERE  ${condition}`).then( DBResponse => {
+      return DBResponse.rows[0].timeout;
+   });
+  },
+
+
+   insertUrl(chatId, url) {
     return client.query(`INSERT INTO tele_bot (chat_id, web_sites) VALUES (${chatId}, 'http://${url}') RETURNING *`);
   },
 
