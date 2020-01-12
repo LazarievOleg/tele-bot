@@ -11,6 +11,8 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
       console.log(timeout);
       db.insertUrl(id, url, timeout);
   
+    } else if (strTimeout.endsWith('m')) {
+      timeout = (parseFloat(strTimeout)) * 60000;
     }
     console.log(url, strTimeout);
   

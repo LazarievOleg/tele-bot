@@ -1,5 +1,7 @@
 const { Client } = require('pg');
 
+
+
 const client = new Client({
   user: 'docker',
   host: process.env.PSQL_PORT_5432_TCP_ADDR || 'localhost',
@@ -20,7 +22,7 @@ module.exports = {
   },
 
    insertTeleBot(){
-    return client.query(`INSERT INTO tele_bot (chat_id, web_sites) VALUES (11, 'website')  RETURNING *`);
+    return client.query(`INSERT INTO tele_bot (chat_id, url) VALUES (11, 'website')  RETURNING *`);
   },
 
 
@@ -30,16 +32,27 @@ module.exports = {
 
   selectTimeout(condition) {
     return client.query(`SELECT timeout FROM  tele_bot WHERE  ${condition}`).then( DBResponse => {
+      console.log('dededede', DBResponse.rows[0].timeout );
+      
       return DBResponse.rows[0].timeout;
    });
   },
 
 
-   insertUrl(chatId, url) {
-    return client.query(`INSERT INTO tele_bot (chat_id, web_sites) VALUES (${chatId}, 'http://${url}') RETURNING *`);
+   insertUrl(chatId, url, timeout = 5000) {
+    return client.query(`INSERT INTO tele_bot (chat_id, url, timeout) VALUES (${chatId}, 'http://${url}', ${timeout}) RETURNING *`);
   },
 
   deleteUrl(url) {
-    return client.query(`DELETE FROM tele_bot WHERE web_sites LIKE '%${url}'`);
+    return client.query(`DELETE FROM tele_bot WHERE url LIKE '%${url}'`);
   },
 };
+
+
+
+// CREATE TABLE tele_bot (
+//   id bigserial primary key,
+//   chat_id bigserial NOT NULL,
+//   url text NOT NULL,
+//   date_added timestamp default NULL
+// );
