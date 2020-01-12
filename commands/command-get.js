@@ -1,5 +1,5 @@
 const fetch = require("node-fetch");
-const help = require("./helpers");
+const help = require("../helpers");
 const sslCertificate = require("get-ssl-certificate");
 
 module.exports = {
