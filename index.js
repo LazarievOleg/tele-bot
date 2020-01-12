@@ -1,113 +1,192 @@
-const fetch = require('node-fetch')
-const telegramBot = require('node-telegram-bot-api')
-const help = require('./helpers')
-const fs = require('fs')
-const token = '1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ'
-const db = require('./db-helper/db-helper.js')
+const fetch = require("node-fetch");
+const telegramBot = require("node-telegram-bot-api");
+const help = require("./helpers");
+const fs = require("fs");
+const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
+const db = require("./db-helper/db-helper.js");
+const sslCertificate = require("get-ssl-certificate");
 
 const bot = new telegramBot(token, {
   polling: true
-})
+});
 
 let urls = [];
 let interval;
 
+bot.onText(/\/get/, msg => {
+  // сделать ответ только когда рреспонс статус больше 200 или ошибка
+  const { id } = msg.chat;
 
-bot.onText(/\/get/, (msg) => {
-  const { id } = msg.chat
+  db.selectUrls(`chat_id = ${id}`)
+    .then(DBResponse => {
+      DBResponse.rows.map(each =>
+        urls.push({ url: each.url, timeout: each.timeout })
+      );
+      return DBResponse.rows[0].timeout;
+    })
+    .then(timeout => {
+      interval = setInterval(() => {
+        urls.forEach(web => {
+          console.log(web);
+          fetch(web.url)
+            .then(webResponse => {
+              console.log(
+                `chat_id: ${id}, url: ${web.url}, status: ${webResponse.status} ${webResponse.statusText}, timeout: ${web.timeout}`
+              );
+              bot.sendMessage(
+                id,
+                `status code of ${web.url} is ${webResponse.status} ${webResponse.statusText} `,
+                {
+                  disable_web_page_preview: true
+                }
+              );
+            })
+            .then(() => {
+              const urlWithout = web.url.replace("http://", "");
+              console.log("fvgbghnhmn", urlWithout);
 
-
-  db.selectUrls(`chat_id = ${id}`).then((DBResponse) => {
-    DBResponse.rows.map(each => urls.push({ url: each.url, timeout: each.timeout }))
-    return DBResponse.rows[0].timeout
-  }).then((response) => {
-    console.log('evertnytmn', response);
-
-
-    interval = setInterval(() => {
-      urls.forEach(web => {
-        console.log(web)
-        fetch(web.url)
-          .then(response => {
-            console.log(`chat_id: ${id}, url: ${web.url}, status: ${response.status} ${response.statusText}, timeout: ${web.timeout}`);
-            bot.sendMessage(id, `status code of ${web.url} is ${response.status} ${response.statusText} `, {
-              disable_web_page_preview: true
+              sslCertificate.get(urlWithout).then(function(certificate) {
+                bot.sendMessage(
+                  id,
+                  `ssl certificate for ${web.url} valid to ${certificate.valid_to} `,
+                  {
+                    disable_web_page_preview: true
+                  }
+                );
+              });
+            })
+            .catch(error => {
+              console.log(id + " " + web + " " + error.message);
+              bot.sendMessage(
+                id,
+                help.debug(error.message) + "   !!! CHECK YOUR URL!!!"
+              );
             });
-          }).catch(error => {
-            console.log(id + ' ' + web + ' ' + error.message)
-            bot.sendMessage(id, help.debug(error.message) + '   !!! CHECK YOUR URL!!!')
-          })
-      });
-    }, response);
-  })
+        });
+      }, timeout);
+    });
 });
 
-bot.onText(/\/start/, (msg) => {
-  const { id } = msg.chat
-  bot.sendMessage(id, `
+bot.onText(/\/start/, msg => {
+  const { id } = msg.chat;
+  bot.sendMessage(
+    id,
+    `
   /get - start getting status codes
   /stop - stop it now!
   /addurl - add URL to your list, example: /addurl snn.com
   /delurl - remove URL from your list, example: /delurl snn.com
-  /myurls - get list with all your URLs`);
+  /myurls - get list with all your URLs
+  /timeout - change default timeout`
+  );
 });
 
-bot.onText(/\/stop/, (msg) => {
-  urls = []
-  const { id } = msg.chat
+bot.onText(/\/stop/, msg => {
+  urls = [];
+  const { id } = msg.chat;
   clearInterval(interval);
   console.log(interval);
   bot.sendMessage(id, `stoped`);
 });
 
-
 bot.onText(/\/delurl (.+)/, (msg, [source, match]) => {
   // добавить обработку если урл нет в базе
-  const { id } = msg.chat
+  const { id } = msg.chat;
   db.deleteUrl(match);
-  bot.sendMessage(id, help.debug(match) + ' url deleted')
-})
+  bot.sendMessage(id, help.debug(match) + " url deleted");
+});
 
-bot.onText(/\/myurls/, (msg) => {
-  const { id } = msg.chat
+bot.onText(/\/myurls/, msg => {
+  const { id } = msg.chat;
   db.selectUrls(`chat_id = ${id}`).then(response => {
     response.rows.map(each => {
       bot.sendMessage(id, help.debug(each.url), {
         disable_web_page_preview: true
-      })
+      });
     });
-  })
-})
-
+  });
+});
 
 bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
-  let urlRowsLength
-  let userUrlsLength
+  const { id } = msg.chat;
+  let urlRowsLength;
+  let userUrlsLength;
 
-  const { id } = msg.chat
   if (match.match(/\./)) {
-    match = (match.replace(/ /g, "")).toLowerCase();
-    db.selectUrls(`chat_id = ${id} and url = 'http://${match}'`, 'url').then((response) => {
-      urlRowsLength = response.rows.length;
-    }).then(() => {
-      db.selectUrls(`chat_id = ${id}`).then((response) => {
-        userUrlsLength = response.rows.length;
-      }).then(() => {
-        if (urlRowsLength === 0 & userUrlsLength <= 10) {
-          db.insertUrl(id, match);
-          bot.sendMessage(id, help.debug(match) + ' url added')
-        } else if (urlRowsLength > 0) {
-          bot.sendMessage(id, help.debug(match) + ' url already in list')
-        }
-        else if (userUrlsLength >= 10) {
-          bot.sendMessage(id, ` your limit has been exided with ${userUrlsLength} urls in list, buy a premium super plan!!!`)
-        }
+    match = match.replace(/ /g, "").toLowerCase();
+
+    db.selectUrls(`chat_id = ${id} and url = 'http://${match}'`, "url")
+      .then(DBResponse => {
+        urlRowsLength = DBResponse.rows.length;
       })
-    })
+      .then(() => {
+        db.selectUrls(`chat_id = ${id}`)
+          .then(DBResponse => {
+            userUrlsLength = DBResponse.rows.length;
+          })
+          .then(() => {
+            if (userUrlsLength === 0) {
+              db.insertUrl(id, match);
+              bot.sendMessage(
+                id,
+                help.debug(match) +
+                  " you first url added with default timeout, change default timeout at any time /timeout"
+              );
+            } else if ((urlRowsLength === 0) & (userUrlsLength <= 10)) {
+              db.insertUrl(id, match);
+              bot.sendMessage(id, help.debug(match) + " url added");
+            } else if (urlRowsLength > 0) {
+              bot.sendMessage(id, help.debug(match) + " url already in list");
+            } else if (userUrlsLength >= 10) {
+              bot.sendMessage(
+                id,
+                ` your limit has been exceed with max ${userUrlsLength} urls in list, buy a premium super plan!!!`
+              );
+            }
+          });
+      });
   }
-})
+});
 
+bot.onText(/\/timeout (.+)/, (msg, [source, match]) => {
+  const { id } = msg.chat;
 
+  let strTimeout = match;
+  let timeout = parseFloat(match);
+
+  if (strTimeout.endsWith("s") && timeout > 60) {
+    timeout = timeout * 1000;
+    db.changeTimeout(`chat_id = ${id}`, timeout);
+    bot.sendMessage(id, ` timeout updated to ${strTimeout}!`);
+  } else if (strTimeout.endsWith("m") && timeout > 1) {
+    timeout = timeout * 60000;
+    db.changeTimeout(`chat_id = ${id}`, timeout);
+    bot.sendMessage(id, ` timeout updated to ${strTimeout}!`);
+  } else if (
+    strTimeout.endsWith("h") &&
+    timeout > 0.000277778 &&
+    timeout < 50
+  ) {
+    timeout = timeout * 3600000;
+    db.changeTimeout(`chat_id = ${id}`, timeout);
+    bot.sendMessage(id, ` timeout updated to ${strTimeout}!`);
+  } else {
+    bot.sendMessage(
+      id,
+      "Syntax or timeout ERROR, timeout must be more then 1 minute and less then 50 hours "
+    );
+  }
+});
+
+// db.changeTimeout(`chat_id = ${id}`, parseFloat(match));
+// db.selectTimeout(`chat_id = ${id}`).then(response => {
+//   bot.sendMessage(id, ` timeout updated to ${response}!`);
+
+// response.rows.map(each => {
+//   bot.sendMessage(id, changedTimeout);
+// });
+//   });
+// });
 
 // bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //   const { id } = msg.chat
@@ -145,7 +224,6 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //     .then(response => {
 //       console.log(`chat_id: ${id}, url: ${web.url}, status: ${response.status} ${response.statusText}, timeout: ${web.timeout}`);
 
-
 //       bot.sendMessage(id, `status code of ${web.url} is ${response.status} ${response.statusText} `, {
 //         disable_web_page_preview: true
 //       });
@@ -155,34 +233,21 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //     })
 // }, web.timeout, console.log(web.timeout)
 
-
-
-
-
-
-
-
-  // interval = setInterval(() => {
-  //   urls.forEach(web => {
-  //     fetch(web)
-  //       .then(response => {
-  //         console.log(id + ' ' + web + ' ' + response.status + ' ' + response.statusText);
-  //         bot.sendMessage(id, `status code of ${web} is ${response.status} ${response.statusText} `, {
-  //           disable_web_page_preview: true
-  //         });
-  //       }).catch(error => {
-  //         console.log(id + ' ' + web + ' ' + error.message)
-  //         bot.sendMessage(id, help.debug(error.message) + '   !!! CHECK YOUR URL!!!')
-  //       })
-  //   });
-  // }, console.log('sxsxsxsx', interval) 
-  //  );
-
-
-
-
-
-
+// interval = setInterval(() => {
+//   urls.forEach(web => {
+//     fetch(web)
+//       .then(response => {
+//         console.log(id + ' ' + web + ' ' + response.status + ' ' + response.statusText);
+//         bot.sendMessage(id, `status code of ${web} is ${response.status} ${response.statusText} `, {
+//           disable_web_page_preview: true
+//         });
+//       }).catch(error => {
+//         console.log(id + ' ' + web + ' ' + error.message)
+//         bot.sendMessage(id, help.debug(error.message) + '   !!! CHECK YOUR URL!!!')
+//       })
+//   });
+// }, console.log('sxsxsxsx', interval)
+//  );
 
 //создание и оплата товара
 
@@ -212,14 +277,9 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 
 // })
 
+// //
 
-
-// // 
-
-
-
-
-// // отправить контакт 
+// // отправить контакт
 
 // bot.onText(/\/con/, msg => {
 //   bot.sendContact(msg.chat.id, '12345678', 'DevCoffee', {
@@ -227,13 +287,12 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //   })
 // })
 
-
-// // гео локация 
+// // гео локация
 // bot.onText(/\/loc/, msg => {
 //   bot.sendLocation(msg.chat.id, 59.928374, 30.123456)
 // })
 
-// //отправка видео 
+// //отправка видео
 // bot.onText(/\/video/, msg => {
 //   const chatID = msg.chat.id
 
@@ -241,7 +300,7 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //   bot.sendVideo(chatID, './data/videoplayback.mp4')
 // })
 
-// //отправка видео 
+// //отправка видео
 // bot.onText(/\/video/, msg => {
 //   const chatID = msg.chat.id
 //   bot.sendMessage(chatID, 'Гружу видяшку')
@@ -250,7 +309,6 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //   })
 
 // })
-
 
 // // отправка стикеров
 // bot.onText(/\/sticker/, msg => {
@@ -263,17 +321,13 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //   })
 // })
 
-
-
 // // отправляем файл
 
 // bot.onText(/\/doc1/, msg => {
 //   bot.sendDocument(msg.chat.id, './data/sheets/test.xlsx')
 // })
 
-
-
-// // отправляем файл со статусами 
+// // отправляем файл со статусами
 // bot.onText(/\/doc2/, msg => {
 //   bot.sendMessage(msg.chat.id, 'Загрузка начата')
 
@@ -285,8 +339,6 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //     })
 //   })
 // })
-
-
 
 // // отправка картинки
 // bot.onText(/\/pic/, msg => {
@@ -305,7 +357,6 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //   bot.sendAudio(msg.chat.id, './data/audio/example.mp3')
 // })
 
-
 // // отправка аудио записи с подписями о старте и завершении
 // bot.onText(/\/audio2/, msg => {
 //   bot.sendMessage(msg.chat.id, "Гружу твой файл епт")
@@ -315,8 +366,6 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //     })
 //   })
 // })
-
-
 
 // // inline клава
 // const inline_keyboard = [
@@ -372,7 +421,7 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //       })
 //       break
 
-//       // удаляем месаг 
+//       // удаляем месаг
 //     case 'delete':
 //       bot.deleteMessage(chat.id, message_id)
 //       break
@@ -396,17 +445,6 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //   })
 // })
 
-
-
-
-
-
-
-
-
-
-
-
 // bot.on('inline_query', query => {
 
 // const results = []
@@ -425,7 +463,6 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //     cache_time: 0
 //   })
 // })
-
 
 // bot.on('message', (msg) => {
 //   const chatID = msg.chat.id;
@@ -499,7 +536,6 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //     }, 4000)
 // });
 
-
 // const sites = ['https://google.com','http://getstatuscode.com/500','http://getstatuscode.com/300','http://getstatuscode.com/404']
 // sites.forEach(web => {
 //     bot.on('message', (msg) => {
@@ -512,13 +548,6 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //         })
 // });
 // });
-
-
-
-
-
-
-
 
 // bot.on('message', (msg) => {
 //     const { id } = msg.chat
@@ -543,14 +572,10 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
 //     console.error(error);
 // })
 
-
-
-
 // bot.onText(/\/start/, msg => {
 //   const { id } = msg.chat;
 //   bot.sendMessage(id, help.debug(msg))
 // })
-
 
 // bot.onText(/\/test (.+)/, (msg, [source, match]) => {
 //   const { id } = msg.chat;
