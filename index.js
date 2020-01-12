@@ -5,6 +5,7 @@ const fs = require("fs");
 const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
 const db = require("./db-helper/db-helper.js");
 const sslCertificate = require("get-ssl-certificate");
+const start = require("./command-get");
 
 const bot = new telegramBot(token, {
   polling: true
@@ -25,44 +26,9 @@ bot.onText(/\/get/, msg => {
       return DBResponse.rows[0].timeout;
     })
     .then(timeout => {
+      start.get(id, urls, bot);
       interval = setInterval(() => {
-        urls.forEach(web => {
-          console.log(web);
-          fetch(web.url)
-            .then(webResponse => {
-              console.log(
-                `chat_id: ${id}, url: ${web.url}, status: ${webResponse.status} ${webResponse.statusText}, timeout: ${web.timeout}`
-              );
-              bot.sendMessage(
-                id,
-                `status code of ${web.url} is ${webResponse.status} ${webResponse.statusText} `,
-                {
-                  disable_web_page_preview: true
-                }
-              );
-            })
-            .then(() => {
-              const urlWithout = web.url.replace("http://", "");
-              console.log("fvgbghnhmn", urlWithout);
-
-              sslCertificate.get(urlWithout).then(function(certificate) {
-                bot.sendMessage(
-                  id,
-                  `ssl certificate for ${web.url} valid to ${certificate.valid_to} `,
-                  {
-                    disable_web_page_preview: true
-                  }
-                );
-              });
-            })
-            .catch(error => {
-              console.log(id + " " + web + " " + error.message);
-              bot.sendMessage(
-                id,
-                help.debug(error.message) + "   !!! CHECK YOUR URL!!!"
-              );
-            });
-        });
+        start.get(id, urls, bot);
       }, timeout);
     });
 });
@@ -85,7 +51,7 @@ bot.onText(/\/stop/, msg => {
   urls = [];
   const { id } = msg.chat;
   clearInterval(interval);
-  console.log(interval);
+  console.log(interval._idleTimeout);
   bot.sendMessage(id, `stoped`);
 });
 
