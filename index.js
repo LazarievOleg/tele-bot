@@ -4,9 +4,9 @@ const help = require("./helpers");
 const fs = require("fs");
 const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
 const db = require("./db-helper/db-helper.js");
-const sslCertificate = require("get-ssl-certificate");
-const start = require("./commands/command-get");
 
+const { get } = require("./commands/command-get");
+const { getSsl } = require("./commands/command-get-ssl");
 const bot = new telegramBot(token, {
   polling: true
 });
@@ -14,23 +14,53 @@ const bot = new telegramBot(token, {
 let urls = [];
 let interval;
 
-bot.onText(/\/get/, msg => {
-  // сделать ответ только когда рреспонс статус больше 200 или ошибка
+bot.onText(/\/ssl/, msg => {
   const { id } = msg.chat;
+  const sslUrls = [];
 
   db.selectUrls(`chat_id = ${id}`)
     .then(DBResponse => {
-      DBResponse.rows.map(each =>
-        urls.push({ url: each.url, timeout: each.timeout })
-      );
-      return DBResponse.rows[0].timeout;
+      DBResponse.rows.map(each => sslUrls.push(each.url));
+      console.log(sslUrls);
     })
-    .then(timeout => {
-      start.get(id, urls, bot);
-      interval = setInterval(() => {
-        start.get(id, urls, bot);
-      }, timeout);
+    .then(() => {
+      getSsl(id, sslUrls, bot);
     });
+});
+
+let getFuncCalls = 0;
+
+bot.onText(/\/get/, msg => {
+  getFuncCalls++;
+  const { id } = msg.chat;
+  // сделать ответ только когда рреспонс статус больше 200 или ошибка
+
+  urls = [];
+
+  const getFunc = () => {
+    db.selectUrls(`chat_id = ${id}`)
+      .then(DBResponse => {
+        DBResponse.rows.map(each =>
+          urls.push({ url: each.url, timeout: each.timeout })
+        );
+        return DBResponse.rows[0].timeout;
+      })
+      .then(timeout => {
+        get(id, urls, bot);
+
+        interval = setInterval(() => {
+          get(id, urls, bot);
+        }, timeout);
+      });
+  };
+
+  if (getFuncCalls === 1) {
+    getFunc();
+  } else if (getFuncCalls > 1) {
+    clearInterval(interval);
+    getFunc();
+    bot.sendMessage(id, `command /get is already running`.toUpperCase());
+  }
 });
 
 bot.onText(/\/start/, msg => {
@@ -52,32 +82,46 @@ bot.onText(/\/stop/, msg => {
   const { id } = msg.chat;
   clearInterval(interval);
   console.log(interval._idleTimeout);
-  bot.sendMessage(id, `stoped`);
+  bot.sendMessage(id, `stoped, rerun: /get`);
 });
 
 bot.onText(/\/delurl (.+)/, (msg, [source, match]) => {
   // добавить обработку если урл нет в базе
+  clearInterval(interval);
   const { id } = msg.chat;
   db.deleteUrl(match);
-  bot.sendMessage(id, help.debug(match) + " url deleted");
+  bot.sendMessage(
+    id,
+    help.debug(match) +
+      " getting status codes stopped, url deleted, rerun command /get"
+  );
 });
 
 bot.onText(/\/myurls/, msg => {
   const { id } = msg.chat;
-  db.selectUrls(`chat_id = ${id}`).then(response => {
-    response.rows.map(each => {
-      bot.sendMessage(id, help.debug(each.url), {
-        disable_web_page_preview: true
+  db.selectUrls(`chat_id = ${id}`)
+    .then(response => {
+      response.rows.map(each => {
+        bot.sendMessage(id, help.debug(each.url), {
+          disable_web_page_preview: true
+        });
+      });
+    })
+    .then(() => {
+      db.selectTimeout(`chat_id = ${id}`).then(timeout => {
+        bot.sendMessage(id, ` your current timeout: ${timeout}`, {
+          disable_web_page_preview: true
+        });
       });
     });
-  });
 });
 
 bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
+  urls = [];
   const { id } = msg.chat;
   let urlRowsLength;
   let userUrlsLength;
-
+  clearInterval(interval);
   if (match.match(/\./)) {
     match = match.replace(/ /g, "").toLowerCase();
 
@@ -100,7 +144,11 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
               );
             } else if ((urlRowsLength === 0) & (userUrlsLength <= 10)) {
               db.insertUrl(id, match);
-              bot.sendMessage(id, help.debug(match) + " url added");
+              bot.sendMessage(
+                id,
+                help.debug(match) +
+                  " getting status codes stopped, url added, rerun command /get"
+              );
             } else if (urlRowsLength > 0) {
               bot.sendMessage(id, help.debug(match) + " url already in list");
             } else if (userUrlsLength >= 10) {
@@ -120,14 +168,22 @@ bot.onText(/\/timeout (.+)/, (msg, [source, match]) => {
   let strTimeout = match;
   let timeout = parseFloat(match);
 
+  clearInterval(interval);
+
   if (strTimeout.endsWith("s") && timeout > 60) {
     timeout = timeout * 1000;
     db.changeTimeout(`chat_id = ${id}`, timeout);
-    bot.sendMessage(id, ` timeout updated to ${strTimeout}!`);
+    bot.sendMessage(
+      id,
+      ` getting status codes stopped! timeout updated to ${strTimeout}! , rerun /get`
+    );
   } else if (strTimeout.endsWith("m") && timeout > 1) {
     timeout = timeout * 60000;
     db.changeTimeout(`chat_id = ${id}`, timeout);
-    bot.sendMessage(id, ` timeout updated to ${strTimeout}!`);
+    bot.sendMessage(
+      id,
+      ` getting status codes stopped! timeout updated to ${strTimeout}! , rerun /get`
+    );
   } else if (
     strTimeout.endsWith("h") &&
     timeout > 0.000277778 &&
@@ -135,7 +191,10 @@ bot.onText(/\/timeout (.+)/, (msg, [source, match]) => {
   ) {
     timeout = timeout * 3600000;
     db.changeTimeout(`chat_id = ${id}`, timeout);
-    bot.sendMessage(id, ` timeout updated to ${strTimeout}!`);
+    bot.sendMessage(
+      id,
+      ` getting status codes stopped! timeout updated to ${strTimeout}! , rerun /get`
+    );
   } else {
     bot.sendMessage(
       id,

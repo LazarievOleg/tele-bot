@@ -1,21 +1,22 @@
 {
-    "name": "telebot",
-    "version": "1.1.0",
-    "description": "",
-    "main": "index.js",
-    "scripts": {
-      "test": "echo \"Error: no test specified\" && exit 1",
-      "start": "nodemon index.js",
-      "start:ci": "node index.js"
-    },
-    "author": "",
-    "license": "ISC",
-    "dependencies": {
-      "get-ssl-certificate": "^2.3.3",
-      "node-fetch": "^2.6.0",
-      "node-telegram-bot-api": "^0.40.0",
-      "nodemon": "^2.0.2",
-      "pg": "^7.17.0"
-    }
+  "name": "telebot",
+  "version": "1.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js",
+    "start:ci": "node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chart.js": "^2.9.3",
+    "get-ssl-certificate": "^2.3.3",
+    "node-fetch": "^2.6.0",
+    "node-html-to-image": "^1.1.0",
+    "node-telegram-bot-api": "^0.40.0",
+    "nodemon": "^2.0.2",
+    "pg": "^7.17.0"
   }
-  
+}
