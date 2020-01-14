@@ -68,12 +68,15 @@ bot.onText(/\/start/, msg => {
   bot.sendMessage(
     id,
     `
-  /get - start getting status codes
-  /stop - stop it now!
-  /addurl - add URL to your list, example: /addurl snn.com
-  /delurl - remove URL from your list, example: /delurl snn.com
-  /myurls - get list with all your URLs
-  /timeout - change default timeout`
+          HOW IT WORKS 
+/addurl - add URL to your list, example: /addurl snn.com
+/myurls - get list with all your URLs and timeout info
+/timeout - change default requests interval
+/get - start getting status codes
+/stop - stop getting status codes
+/ssl - get the end date of SSL certificates
+/delurl - remove URL from your list, example: /delurl snn.com
+`
   );
 });
 
@@ -86,15 +89,30 @@ bot.onText(/\/stop/, msg => {
 });
 
 bot.onText(/\/delurl (.+)/, (msg, [source, match]) => {
-  // добавить обработку если урл нет в базе
   clearInterval(interval);
   const { id } = msg.chat;
-  db.deleteUrl(match);
-  bot.sendMessage(
-    id,
-    help.debug(match) +
-      " getting status codes stopped, url deleted, rerun command /get"
-  );
+  let rowCounts;
+
+  db.deleteUrl(match)
+    .then(response => {
+      rowCounts = response.rowCount;
+      return rowCounts;
+    })
+    .then(rowCounts => {
+      if (rowCounts === 0) {
+        bot.sendMessage(
+          id,
+          help.debug(match) +
+            ` there is no ${match} url in your list, getting status codes stopped, rerun command: /get`
+        );
+      } else {
+        bot.sendMessage(
+          id,
+          help.debug(match) +
+            " getting status codes stopped, url deleted, rerun command /get"
+        );
+      }
+    });
 });
 
 bot.onText(/\/myurls/, msg => {
@@ -115,6 +133,7 @@ bot.onText(/\/myurls/, msg => {
       });
     });
 });
+
 
 bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
   urls = [];
@@ -147,7 +166,7 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
               bot.sendMessage(
                 id,
                 help.debug(match) +
-                  " getting status codes stopped, url added, rerun command /get"
+                  " getting status codes stopped, url added, rerun command: /get"
               );
             } else if (urlRowsLength > 0) {
               bot.sendMessage(id, help.debug(match) + " url already in list");
