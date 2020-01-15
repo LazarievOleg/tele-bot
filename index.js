@@ -1,18 +1,42 @@
-const fetch = require("node-fetch");
+process.env.NTBA_FIX_319 = 1;
 const telegramBot = require("node-telegram-bot-api");
 const help = require("./helpers");
 const fs = require("fs");
 const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
 const db = require("./db-helper/db-helper.js");
+const EventEmitter = require("events");
 
 const { get } = require("./commands/command-get");
 const { getSsl } = require("./commands/command-get-ssl");
+
 const bot = new telegramBot(token, {
-  polling: true
+  polling: true,
+  filepath: false /// to send or receive file delete this filepath string
 });
+
+let today = new Date();
+let date =
+  today.getFullYear() + "-" + (today.getMonth() + 1) + "-" + today.getDate();
+let time =
+  today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+let dateTime = date + " " + time;
+
+
+// console.log(process.env.NODE_ENV);
+// process.env.NODE_ENV = "development";
+// console.log(process.env.NODE_ENV);
+// process.env.NODE_ENV === "development"
+// // добавить возобновление гет функции при рестарте бота если она была запущена ранее
+//   ? bot.sendMessage(549810057, `bot restarted ${dateTime}`)
+//   : "";
+
+  bot.sendMessage(549810057, `bot restarted ${dateTime}`)
 
 let urls = [];
 let interval;
+
+
+
 
 bot.onText(/\/ssl/, msg => {
   const { id } = msg.chat;
@@ -47,8 +71,9 @@ bot.onText(/\/get/, msg => {
       })
       .then(timeout => {
         get(id, urls, bot);
-
+        
         interval = setInterval(() => {
+          console.log(interval);
           get(id, urls, bot);
         }, timeout);
       });
@@ -85,7 +110,7 @@ bot.onText(/\/stop/, msg => {
   const { id } = msg.chat;
   clearInterval(interval);
   console.log(interval._idleTimeout);
-  bot.sendMessage(id, `stoped, rerun: /get`);
+  bot.sendMessage(id, `stopped, rerun: /get`);
 });
 
 bot.onText(/\/delurl (.+)/, (msg, [source, match]) => {
@@ -133,7 +158,6 @@ bot.onText(/\/myurls/, msg => {
       });
     });
 });
-
 
 bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
   urls = [];
@@ -220,6 +244,16 @@ bot.onText(/\/timeout (.+)/, (msg, [source, match]) => {
       "Syntax or timeout ERROR, timeout must be more then 1 minute and less then 50 hours "
     );
   }
+});
+
+bot.on("polling_error", error => {
+  console.log(error.code); // => 'EFATAL'
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.log("Unhandled Rejection at:", reason.stack || reason);
+  // Recommended: send the information to sentry.io
+  // or whatever crash reporting service you use
 });
 
 // db.changeTimeout(`chat_id = ${id}`, parseFloat(match));
