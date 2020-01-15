@@ -1,5 +1,5 @@
 build:
   docker:
-    tele-bot: Dockerfile
+    web: Dockerfile
 run:
-  tele-bot: npm start:ci 
+  web: npm start
