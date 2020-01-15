@@ -1,11 +1,15 @@
 const { Client } = require("pg");
 
 const client = new Client({
-  user: "docker",
-  host: process.env.PSQL_PORT_5432_TCP_ADDR || "localhost",
-  database: "docker",
-  password: "docker",
-  port: process.env.PSQL_PORT_5432_TCP_PORT || 6588
+  // user: "docker",
+  // host: process.env.PSQL_PORT_5432_TCP_ADDR || "localhost",
+  // database: "docker",
+  // password: "docker",
+  // port: process.env.PSQL_PORT_5432_TCP_PORT || 6588
+
+  connectionString: process.env.DATABASE_URL,
+  ssl: true,
+
 });
 
 client.connect();
