@@ -7,7 +7,7 @@ const client = new Client({
   // password: "docker",
   // port: process.env.PSQL_PORT_5432_TCP_PORT || 6588
 
-  connectionString: process.env.DATABASE_URL,
+  connectionString: 'postgres://sardsgvrvqwefo:b04097874f1e1e300ea19608290aee948f8d4f4fefe255041535618d976853e1@ec2-46-137-91-216.eu-west-1.compute.amazonaws.com:5432/d4ubig0sjv12v1',
   ssl: true,
 
 });
@@ -66,5 +66,5 @@ module.exports = {
 //   id bigserial primary key,
 //   chat_id bigserial NOT NULL,
 //   url text NOT NULL,
-//   date_added timestamp default NULL
+//   date_added  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 // );
