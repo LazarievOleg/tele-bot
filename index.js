@@ -9,6 +9,18 @@ const EventEmitter = require("events");
 const { get } = require("./commands/command-get");
 const { getSsl } = require("./commands/command-get-ssl");
 
+
+const express = require('express')
+const app = express()
+
+app.get('/', function(req, res) {
+    res.send('Hello Sir')
+})
+app.listen(3000)
+
+
+
+
 const bot = new telegramBot(token, {
   polling: true,
   filepath: false /// to send or receive file delete this filepath string
@@ -20,6 +32,8 @@ let date =
 let time =
   today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
 let dateTime = date + " " + time;
+
+
 
 
 // console.log(process.env.NODE_ENV);
