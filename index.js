@@ -1,21 +1,21 @@
-process.env.NTBA_FIX_319 = 1;
-const telegramBot = require("node-telegram-bot-api");
-const help = require("./helpers");
-const fs = require("fs");
-const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
-const db = require("./db-helper/db-helper.js");
+// process.env.NTBA_FIX_319 = 1;
+// const telegramBot = require("node-telegram-bot-api");
+// const help = require("./helpers");
+// const fs = require("fs");
+// const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
+// const db = require("./db-helper/db-helper.js");
 
-const { get } = require("./commands/command-get");
-const { getSsl } = require("./commands/command-get-ssl");
+// const { get } = require("./commands/command-get");
+// const { getSsl } = require("./commands/command-get-ssl");
 
 
-const express = require('express')
-const app = express()
+// const express = require('express')
+// const app = express()
 
-app.get('/', function(req, res) {
-    res.send('Hello Sir')
-})
-app.listen(process.env.PORT || 3000)
+// app.get('/', function(req, res) {
+//     res.send('Hello Sir')
+// })
+// app.listen(process.env.PORT || 3000)
 
 
 
@@ -65,9 +65,10 @@ bot.onText(/\/ssl/, msg => {
     });
 });
 
-let getFuncCalls = 0;
+
 
 bot.onText(/\/get/, msg => {
+  let getFuncCalls = 0;
   getFuncCalls++;
   const { id } = msg.chat;
   // сделать ответ только когда рреспонс статус больше 200 или ошибка
@@ -97,7 +98,7 @@ bot.onText(/\/get/, msg => {
   } else if (getFuncCalls > 1) {
     clearInterval(interval);
     getFunc();
-    bot.sendMessage(id, `command /get is already running`.toUpperCase());
+    bot.sendMessage(id, `command /get is running`.toUpperCase());
   }
 });
 
