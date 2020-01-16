@@ -6,8 +6,8 @@ module.exports = {
   get(id, urls, bot) {
     urls.forEach(web => {
       console.log(web);
-      request({ url: web.url, agentOptions: {
-        rejectUnauthorized: false
+      request({ url: web.url, agentOptions: { //
+        rejectUnauthorized: false             // fix authorization error of CERT_HAS_EXPIRED.
       }, time: true }, function(error, response, body) {
         // console.log("error:", error); // Print the error if one occurred
         // console.log("statusCode:", response && response.statusCode); // Print the response status code if a response was received

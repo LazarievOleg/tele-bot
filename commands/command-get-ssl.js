@@ -10,7 +10,7 @@ module.exports = {
         .then(certificate => {
           bot.sendMessage(
             id,
-            `ssl certificate for ${url} valid to ${certificate.valid_to} `,
+            `ssl certificate for ${url} expires ${certificate.valid_to} `,
             {
               disable_web_page_preview: true
             }

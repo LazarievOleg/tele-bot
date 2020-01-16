@@ -33,5 +33,4 @@ services:
     network_mode: bridge
     ports:
       - '5555:5555'
-    expose:
-      - '5555'
+      - '3000:3000'
