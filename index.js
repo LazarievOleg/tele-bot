@@ -4,7 +4,6 @@ const help = require("./helpers");
 const fs = require("fs");
 const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
 const db = require("./db-helper/db-helper.js");
-const EventEmitter = require("events");
 
 const { get } = require("./commands/command-get");
 const { getSsl } = require("./commands/command-get-ssl");
