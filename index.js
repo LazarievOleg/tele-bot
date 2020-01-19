@@ -2,7 +2,8 @@ process.env.NTBA_FIX_319 = 1; ///fix telegram api error with deprecated callback
 const telegramBot = require("node-telegram-bot-api");
 const help = require("./helpers");
 const fs = require("fs");
-const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
+// const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
+const token = '';
 const db = require("./db-helper/db-helper.js");
 
 const { get } = require("./commands/command-get");
@@ -14,6 +15,13 @@ const app = express()
 
 app.get('/', function(req, res) {
     res.send('Hello Sir')
+})
+
+const ggg = [ 'gtgtgtgt']
+
+app.get('/', function(req, res) {
+
+  res.send(ggg)
 })
 app.listen(process.env.PORT || 3000)
 
