@@ -54,7 +54,7 @@ bot.onText(/\/ssl/, async msg => {
   const { chatId } = msg.chat;
 
   // get urls from db
-  const urlResponse = await db.selectUrls(`chat_id = ${chatId}`);
+  const urlResponse = await db.selectUrlsAsync(`chat_id = ${chatId}`);
 
   for (let url of urlResponse.rows) {
     try {

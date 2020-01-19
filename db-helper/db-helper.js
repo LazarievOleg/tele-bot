@@ -41,6 +41,10 @@ module.exports = {
     return client.query(`SELECT ${column} FROM  ${table} WHERE  ${condition}`);
   },
 
+  async selectUrlsAsync(condition, column = "*", table = "tele_bot") {
+    return await client.query(`SELECT ${column} FROM ${table} WHERE ${condition}`);
+  },
+
   selectTimeout(condition) {
     return client
       .query(`SELECT timeout FROM  tele_bot WHERE  ${condition}`)
