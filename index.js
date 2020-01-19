@@ -6,14 +6,14 @@ const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
 const db = require("./db-helper/db-helper.js");
 
 const { get } = require("./commands/command-get");
-const { getSsl } = require("./commands/command-get-ssl");
+const { getSsl, getSSLCertificateAsync } = require("./commands/command-get-ssl");
 
 
 const express = require('express')
 const app = express()
 
-app.get('/', function(req, res) {
-    res.send('Hello Sir')
+app.get('/', function (req, res) {
+  res.send('Hello Sir')
 })
 app.listen(process.env.PORT || 3000)
 
@@ -42,7 +42,7 @@ let dateTime = date + " " + time;
 //   ? bot.sendMessage(549810057, `bot restarted ${dateTime}`)
 //   : "";
 
-  bot.sendMessage(549810057, `bot restarted ${dateTime}`)
+bot.sendMessage(549810057, `bot restarted ${dateTime}`)
 
 let urls = [];
 let interval;
@@ -50,19 +50,39 @@ let interval;
 
 
 
-bot.onText(/\/ssl/, msg => {
-  const { id } = msg.chat;
-  const sslUrls = [];
+bot.onText(/\/ssl/, async msg => {
+  const { chatId } = msg.chat;
 
-  db.selectUrls(`chat_id = ${id}`)
-    .then(DBResponse => {
-      DBResponse.rows.map(each => sslUrls.push(each.url));
-      console.log(sslUrls);
-    })
-    .then(() => {
-      getSsl(id, sslUrls, bot);
-    });
+  // get urls from db
+  const urlResponse = await db.selectUrls(`chat_id = ${chatId}`);
+
+  for (let url of urlResponse.rows) {
+    try {
+      // get SSL certificate
+      const certificate = await getSSLCertificateAsync(url);
+      // send message
+      bot.sendMessage(chatId, `ssl certificate for ${url} expires ${certificate.valid_to} `, { disable_web_page_preview: true });
+    } catch (error) {
+      // something went wrong
+      bot.sendMessage(chatId, `ERROR: ${error.message}!!! we can not found any SSL for ${url} ¯\_(ツ)_/¯ !!!`);
+    }
+  }
+
 });
+
+// bot.onText(/\/ssl/, msg => {
+//   const { id } = msg.chat;
+//   const sslUrls = [];
+
+//   db.selectUrls(`chat_id = ${id}`)
+//     .then(DBResponse => {
+//       DBResponse.rows.map(each => sslUrls.push(each.url));
+//       console.log(sslUrls);
+//     })
+//     .then(() => {
+//       getSsl(id, sslUrls, bot);
+//     });
+// });
 
 
 
@@ -84,7 +104,7 @@ bot.onText(/\/get/, msg => {
       })
       .then(timeout => {
         get(id, urls, bot);
-        
+
         interval = setInterval(() => {
           console.log(interval);
           get(id, urls, bot);
@@ -141,13 +161,13 @@ bot.onText(/\/delurl (.+)/, (msg, [source, match]) => {
         bot.sendMessage(
           id,
           help.debug(match) +
-            ` there is no ${match} url in your list, getting status codes stopped, rerun command: /get`
+          ` there is no ${match} url in your list, getting status codes stopped, rerun command: /get`
         );
       } else {
         bot.sendMessage(
           id,
           help.debug(match) +
-            " getting status codes stopped, url deleted, rerun command /get"
+          " getting status codes stopped, url deleted, rerun command /get"
         );
       }
     });
@@ -196,14 +216,14 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
               bot.sendMessage(
                 id,
                 help.debug(match) +
-                  " you first url added with default timeout, change default timeout at any time /timeout"
+                " you first url added with default timeout, change default timeout at any time /timeout"
               );
             } else if ((urlRowsLength === 0) & (userUrlsLength <= 10)) {
               db.insertUrl(id, match);
               bot.sendMessage(
                 id,
                 help.debug(match) +
-                  " getting status codes stopped, url added, rerun command: /get"
+                " getting status codes stopped, url added, rerun command: /get"
               );
             } else if (urlRowsLength > 0) {
               bot.sendMessage(id, help.debug(match) + " url already in list");
