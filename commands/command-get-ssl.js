@@ -1,6 +1,14 @@
 const sslCertificate = require("get-ssl-certificate");
 
 module.exports = {
+
+  async getSSLCertificateAsync(url) {
+
+    url = url.replace("http://", "");
+
+    return await sslCertificate.get(url)
+  },
+
   getSsl(id, sslUrls, bot) {
     sslUrls.forEach(url => {
       const urlSsl = url.replace("http://", "");
