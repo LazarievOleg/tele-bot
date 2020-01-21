@@ -2,16 +2,24 @@
 const fetch = require("node-fetch");
 const request = require("request");
 const nodeHtmlToImage = require("node-html-to-image");
-module.exports = {
-  get(id, urls, bot) {
-    urls.forEach(web => {
-      console.log(web);
-      request({ url: web.url, agentOptions: { //
-        rejectUnauthorized: false             // fix authorization error of CERT_HAS_EXPIRED.
-      }, time: true }, function(error, response, body) {
+const { chartDurationData } = require("../db-helper/db-helper");
+
+function get(id, urls, bot) {
+  urls.forEach(web => {
+    console.log(web);
+    request(
+      {
+        url: web.url,
+        agentOptions: {
+          rejectUnauthorized: false // fix authorization error of CERT_HAS_EXPIRED.
+        },
+        time: true
+      },
+      function(error, response, body) {
         // console.log("error:", error); // Print the error if one occurred
         // console.log("statusCode:", response && response.statusCode); // Print the response status code if a response was received
         // // console.log("body:", body); // Print the HTML for the Google homepage.
+        chartDurationData(id, web.url, response.elapsedTime); //collect data for chart
         console.log(
           `chat_id: ${id}, url: ${web.url}, status: ${response.statusCode}, duration: ${response.elapsedTime} timeout: ${web.timeout}`
         );
@@ -22,10 +30,12 @@ module.exports = {
             disable_web_page_preview: true
           }
         );
-      });
-    });
-  }
-};
+      }
+    );
+  });
+}
+
+module.exports = get;
 
 //  html to image
 //   nodeHtmlToImage({

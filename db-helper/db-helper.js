@@ -7,9 +7,9 @@ const client = new Client({
   // password: "docker",
   // port: process.env.PSQL_PORT_5432_TCP_PORT || 6588
 
-  connectionString: 'postgres://sardsgvrvqwefo:b04097874f1e1e300ea19608290aee948f8d4f4fefe255041535618d976853e1@ec2-46-137-91-216.eu-west-1.compute.amazonaws.com:5432/d4ubig0sjv12v1',
-  ssl: true,
-
+  connectionString: // heroku pg database
+    "postgres://sardsgvrvqwefo:b04097874f1e1e300ea19608290aee948f8d4f4fefe255041535618d976853e1@ec2-46-137-91-216.eu-west-1.compute.amazonaws.com:5432/d4ubig0sjv12v1",
+  ssl: true
 });
 
 client.connect();
@@ -42,15 +42,15 @@ module.exports = {
   },
 
   async selectUrlsAsync(condition, column = "*", table = "tele_bot") {
-    return await client.query(`SELECT ${column} FROM ${table} WHERE ${condition}`);
+    return await client.query(
+      `SELECT ${column} FROM ${table} WHERE ${condition}`
+    );
   },
 
   selectTimeout(condition) {
     return client
       .query(`SELECT timeout FROM  tele_bot WHERE  ${condition}`)
       .then(DBResponse => {
-        console.log("dededede", DBResponse.rows[0].timeout);
-
         return DBResponse.rows[0].timeout;
       });
   },
@@ -63,6 +63,25 @@ module.exports = {
 
   deleteUrl(url) {
     return client.query(`DELETE FROM tele_bot WHERE url LIKE '%${url}'`);
+  },
+
+  chartDurationData(chatId, url, duration) {
+    return client.query(
+      `INSERT INTO chart_duration (chat_id, url, duration) VALUES (${chatId}, '${url}', ${duration}) RETURNING *`
+    );
+  },
+
+  selectDuration(condition) {
+    return client
+      .query(
+        ` SELECT url, COUNT(url),  SUM(duration)
+      FROM chart_duration 
+      where ${condition}
+      GROUP BY url;  `
+      )
+      .then(DBResponse => {
+        return DBResponse.rows;
+      });
   }
 };
 
@@ -72,3 +91,11 @@ module.exports = {
 //   url text NOT NULL,
 //   date_added  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 // );
+
+// CREATE TABLE chart_duration (
+//   id bigserial primary key,
+//   chat_id bigserial NOT NULL,
+//   url text NOT NULL,
+//   duration bigserial NOT NULL,
+//   date_added  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+//    );

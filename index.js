@@ -1,98 +1,87 @@
 process.env.NTBA_FIX_319 = 1; ///fix telegram api error with deprecated callback
 const telegramBot = require("node-telegram-bot-api");
 const help = require("./helpers");
-const fs = require("fs");
-// const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
-const token = '';
+const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
 const db = require("./db-helper/db-helper.js");
+const getChartImg = require("./charts/average-duration-chart");
+const {get , getSsl} = require("./commands");
+// const { getSSLCertificateAsync } = require("./commands/command-get-ssl");
 
-const { get } = require("./commands/command-get");
-const { getSsl, getSSLCertificateAsync } = require("./commands/command-get-ssl");
+const express = require("express");
+const app = express();
 
-
-const express = require('express')
-const app = express()
-
-app.get('/', function (req, res) {
-  res.send('Hello Sir')
-})
-
-const ggg = [ 'gtgtgtgt']
-
-app.get('/', function(req, res) {
-
-  res.send(ggg)
-})
-app.listen(process.env.PORT || 3000)
-
-
+app.get("/", function(req, res) {
+  res.send("Hello Sir");
+});
+app.listen(process.env.PORT || 3000);
 
 const bot = new telegramBot(token, {
   polling: true,
-  filepath: false /// to send or receive file delete this filepath string
 });
 
-let today = new Date();
-let date =
-  today.getFullYear() + "-" + (today.getMonth() + 1) + "-" + today.getDate();
-let time =
-  today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-let dateTime = date + " " + time;
+// // |||||||||||||||||||||||||||||||||||добавить возобновление гет функции при рестарте бота если она была запущена ранее
 
-
-
-
-// console.log(process.env.NODE_ENV);
-// process.env.NODE_ENV = "development";
-// console.log(process.env.NODE_ENV);
-// process.env.NODE_ENV === "development"
-// // добавить возобновление гет функции при рестарте бота если она была запущена ранее
-//   ? bot.sendMessage(549810057, `bot restarted ${dateTime}`)
-//   : "";
-
-bot.sendMessage(549810057, `bot restarted ${dateTime}`)
+bot.sendMessage(
+  549810057,
+  `bot restarted ${new Date().toLocaleString("uk-UA")}`
+);
 
 let urls = [];
 let interval;
 
+// не работает: урлс это кучка обхектов нужно из каждого урл вінимать
 
+// bot.onText(/\/ssl/, async msg => {
+//   const chatId = msg.chat.id;
+//   // get urls from db
+//   const urlResponse = await db.selectUrlsAsync(`chat_id = ${chatId}`);
 
-
-bot.onText(/\/ssl/, async msg => {
-  const { chatId } = msg.chat;
-
-  // get urls from db
-  const urlResponse = await db.selectUrlsAsync(`chat_id = ${chatId}`);
-
-  for (let url of urlResponse.rows) {
-    try {
-      // get SSL certificate
-      const certificate = await getSSLCertificateAsync(url);
-      // send message
-      bot.sendMessage(chatId, `ssl certificate for ${url} expires ${certificate.valid_to} `, { disable_web_page_preview: true });
-    } catch (error) {
-      // something went wrong
-      bot.sendMessage(chatId, `ERROR: ${error.message}!!! we can not found any SSL for ${url} ¯\_(ツ)_/¯ !!!`);
-    }
-  }
-
-});
-
-// bot.onText(/\/ssl/, msg => {
-//   const { id } = msg.chat;
-//   const sslUrls = [];
-
-//   db.selectUrls(`chat_id = ${id}`)
-//     .then(DBResponse => {
-//       DBResponse.rows.map(each => sslUrls.push(each.url));
-//       console.log(sslUrls);
-//     })
-//     .then(() => {
-//       getSsl(id, sslUrls, bot);
-//     });
+//   for (let urls of urlResponse.rows) {
+//     try {
+//       // get SSL certificate
+//       const certificate = await getSSLCertificateAsync(urls);
+//       // send message
+//       bot.sendMessage(
+//         chatId,
+//         `ssl certificate for ${url} expires ${certificate.valid_to} `,
+//         { disable_web_page_preview: true }
+//       );
+//     } catch (error) {
+//       // something went wrong
+//       bot.sendMessage(
+//         chatId,
+//         `ERROR: ${error.message}!!! we can not found any SSL for ${url} ¯\_(ツ)_/¯ !!!`
+//       );
+//     }
+//   }
 // });
 
+bot.onText(/\/chart-avg-req/, async msg => {
+  const { id } = msg.chat;
+  const image = await getChartImg(id);
+  bot.sendPhoto(
+    id,
+    image,
+    {
+      caption: "Average Requests Duration Chart"
+    },
+    { filename: "DurationChart.png", contentType: "image/png" }
+  );
+});
 
+bot.onText(/\/ssl/, msg => {
+  const { id } = msg.chat;
+  const sslUrls = [];
+
+  db.selectUrls(`chat_id = ${id}`)
+    .then(DBResponse => {
+      DBResponse.rows.map(each => sslUrls.push(each.url));
+      console.log(sslUrls);
+    })
+    .then(() => {
+      getSsl(id, sslUrls, bot);
+    });
+});
 
 bot.onText(/\/get/, msg => {
   let getFuncCalls = 0;
@@ -142,6 +131,7 @@ bot.onText(/\/start/, msg => {
 /stop - stop getting status codes
 /ssl - get the end date of SSL certificates
 /delurl - remove URL from your list, example: /delurl snn.com
+/chart-avg-req - return png with average requests duration bar chart
 `
   );
 });
@@ -169,13 +159,13 @@ bot.onText(/\/delurl (.+)/, (msg, [source, match]) => {
         bot.sendMessage(
           id,
           help.debug(match) +
-          ` there is no ${match} url in your list, getting status codes stopped, rerun command: /get`
+            ` there is no ${match} url in your list, getting status codes stopped, rerun command: /get`
         );
       } else {
         bot.sendMessage(
           id,
           help.debug(match) +
-          " getting status codes stopped, url deleted, rerun command /get"
+            " getting status codes stopped, url deleted, rerun command /get"
         );
       }
     });
@@ -224,14 +214,14 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
               bot.sendMessage(
                 id,
                 help.debug(match) +
-                " you first url added with default timeout, change default timeout at any time /timeout"
+                  " you first url added with default timeout, change default timeout at any time /timeout"
               );
             } else if ((urlRowsLength === 0) & (userUrlsLength <= 10)) {
               db.insertUrl(id, match);
               bot.sendMessage(
                 id,
                 help.debug(match) +
-                " getting status codes stopped, url added, rerun command: /get"
+                  " getting status codes stopped, url added, rerun command: /get"
               );
             } else if (urlRowsLength > 0) {
               bot.sendMessage(id, help.debug(match) + " url already in list");
