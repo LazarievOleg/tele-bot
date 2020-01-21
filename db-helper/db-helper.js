@@ -66,7 +66,7 @@ module.exports = {
   },
 
   chartDurationData(chatId, url, duration) {
-    url.replace("http://", "");
+    url = url.replace("http://", "");
     return client.query(
       `INSERT INTO chart_duration (chat_id, url, duration) VALUES (${chatId}, '${url}', ${duration}) RETURNING *`
     );
