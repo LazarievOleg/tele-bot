@@ -19,17 +19,28 @@ function get(id, urls, bot) {
         // console.log("error:", error); // Print the error if one occurred
         // console.log("statusCode:", response && response.statusCode); // Print the response status code if a response was received
         // // console.log("body:", body); // Print the HTML for the Google homepage.
-        chartDurationData(id, web.url, response.elapsedTime); //collect data for chart
-        console.log(
-          `chat_id: ${id}, url: ${web.url}, status: ${response.statusCode}, duration: ${response.elapsedTime} timeout: ${web.timeout}`
-        );
-        bot.sendMessage(
-          id,
-          `status code of ${web.url} is ${response.statusCode}, duration: ${response.elapsedTime} ms`,
-          {
-            disable_web_page_preview: true
-          }
-        );
+
+        if (response != undefined) {
+          chartDurationData(id, web.url, response.elapsedTime);
+          console.log(
+            `chat_id: ${id}, url: ${web.url}, status: ${response.statusCode}, duration: ${response.elapsedTime} timeout: ${web.timeout}`
+          );
+          bot.sendMessage(
+            id,
+            `status code of ${web.url} is ${response.statusCode}, duration: ${response.elapsedTime} ms`,
+            {
+              disable_web_page_preview: true
+            }
+          );
+        } else {
+          bot.sendMessage(
+            id,
+            `SOMETHING WERE WRONG WITH YOUR WEB SITE: ${web.url} IT RESPONSE: ${response}`,
+            {
+              disable_web_page_preview: true
+            }
+          );
+        }
       }
     );
   });

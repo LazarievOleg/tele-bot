@@ -4,7 +4,7 @@ const help = require("./helpers");
 const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
 const db = require("./db-helper/db-helper.js");
 const getChartImg = require("./charts/average-duration-chart");
-const {get , getSsl} = require("./commands");
+const { get, getSsl, getOnlyBadResponse } = require("./commands");
 // const { getSSLCertificateAsync } = require("./commands/command-get-ssl");
 
 const express = require("express");
@@ -16,7 +16,7 @@ app.get("/", function(req, res) {
 app.listen(process.env.PORT || 3000);
 
 const bot = new telegramBot(token, {
-  polling: true,
+  polling: true
 });
 
 // // |||||||||||||||||||||||||||||||||||добавить возобновление гет функции при рестарте бота если она была запущена ранее
@@ -28,7 +28,7 @@ bot.sendMessage(
 
 let urls = [];
 let interval;
-
+let getFunctionsCallsNumber = 0;
 // не работает: урлс это кучка обхектов нужно из каждого урл вінимать
 
 // bot.onText(/\/ssl/, async msg => {
@@ -56,7 +56,7 @@ let interval;
 //   }
 // });
 
-bot.onText(/\/chart-avg-req/, async msg => {
+bot.onText(/\/average/, async msg => {
   const { id } = msg.chat;
   const image = await getChartImg(id);
   bot.sendPhoto(
@@ -83,14 +83,40 @@ bot.onText(/\/ssl/, msg => {
     });
 });
 
-bot.onText(/\/get/, msg => {
-  let getFuncCalls = 0;
-  getFuncCalls++;
-  const { id } = msg.chat;
-  // сделать ответ только когда рреспонс статус больше 200 или ошибка
-
+bot.onText(/\/OnlyBadResponse/, async msg => {
   urls = [];
+  clearInterval(interval);
+  getFunctionsCallsNumber++;
 
+  const { id } = msg.chat;
+  const getFunc = async () => {
+    const dbData = await (await db.selectUrls(`chat_id = ${id}`)).rows;
+    dbData.map(each => urls.push({ url: each.url, timeout: each.timeout }));
+    const timeout = await dbData[0].timeout;
+    await getOnlyBadResponse(id, urls, bot);
+
+    interval = setInterval(async () => {
+      await getOnlyBadResponse(id, urls, bot);
+    }, timeout);
+  };
+
+  if (getFunctionsCallsNumber === 1) {
+    await getFunc();
+  } else if (getFunctionsCallsNumber > 1) {
+    await clearInterval(interval);
+    await getFunc();
+    await bot.sendMessage(
+      id,
+      `OTHER COMMANDS STOPPED, /OnlyBadResponse IS RUNNING`
+    );
+  }
+});
+
+bot.onText(/\/get/, msg => {
+  urls = [];
+  clearInterval(interval);
+  getFunctionsCallsNumber++;
+  const { id } = msg.chat;
   const getFunc = () => {
     db.selectUrls(`chat_id = ${id}`)
       .then(DBResponse => {
@@ -109,31 +135,35 @@ bot.onText(/\/get/, msg => {
       });
   };
 
-  if (getFuncCalls === 1) {
+  if (getFunctionsCallsNumber === 1) {
     getFunc();
-  } else if (getFuncCalls > 1) {
+  } else if (getFunctionsCallsNumber > 1) {
     clearInterval(interval);
     getFunc();
-    bot.sendMessage(id, `command /get is running`.toUpperCase());
+    bot.sendMessage(id, `OTHER COMMANDS STOPPED, /get IS RUNNING`);
   }
 });
 
 bot.onText(/\/start/, msg => {
   const { id } = msg.chat;
-  bot.sendMessage(
-    id,
-    `
-          HOW IT WORKS 
-/addurl - add URL to your list, example: /addurl snn.com
-/myurls - get list with all your URLs and timeout info
-/timeout - change default requests interval, example "/timeout 1h"  will set timeout 1 hour
-/get - start getting status codes
-/stop - stop getting status codes
-/ssl - get the end date of SSL certificates
-/delurl - remove URL from your list, example: /delurl snn.com
-/chart-avg-req - return png with average requests duration bar chart
-`
-  );
+  const markdownText = `
+  *HOW IT WORKS*
+
+  */addurl* - add URL to your list, example: /addurl snn.com
+  */myurls* - get list with all your URLs and timeout info
+  */timeout* - change default requests interval, example "/timeout 1h" will set timeout to 1 hour
+  */get* - start getting status codes
+  */OnlyBadResponse* - start getting status codes, but receive notification only when status code not equal 200
+  */stop* - stop getting status codes
+  */ssl* - get the end date of SSL certificates
+  */delurl* - remove URL from your list, example: /delurl snn.com
+
+  */average* - return png with average requests duration bar chart
+
+  `;
+  bot.sendMessage(id, markdownText, {
+    parse_mode: "Markdown"
+  });
 });
 
 bot.onText(/\/stop/, msg => {
@@ -197,6 +227,9 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
   let userUrlsLength;
   clearInterval(interval);
   if (match.match(/\./)) {
+    match = match.replace("http://", "");
+    match = match.replace("https://", "");
+    match = match.replace("www.", "");
     match = match.replace(/ /g, "").toLowerCase();
 
     db.selectUrls(`chat_id = ${id} and url = 'http://${match}'`, "url")
@@ -214,17 +247,25 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
               bot.sendMessage(
                 id,
                 help.debug(match) +
-                  " you first url added with default timeout, change default timeout at any time /timeout"
+                  " you first url added with default timeout, change default timeout at any time /timeout",
+                {
+                  disable_web_page_preview: true
+                }
               );
             } else if ((urlRowsLength === 0) & (userUrlsLength <= 10)) {
               db.insertUrl(id, match);
               bot.sendMessage(
                 id,
                 help.debug(match) +
-                  " getting status codes stopped, url added, rerun command: /get"
+                  " getting status codes stopped, url added, rerun command: /get",
+                {
+                  disable_web_page_preview: true
+                }
               );
             } else if (urlRowsLength > 0) {
-              bot.sendMessage(id, help.debug(match) + " url already in list");
+              bot.sendMessage(id, help.debug(match) + " url already in list", {
+                disable_web_page_preview: true
+              });
             } else if (userUrlsLength >= 10) {
               bot.sendMessage(
                 id,
@@ -233,6 +274,8 @@ bot.onText(/\/addurl (.+)/, (msg, [source, match]) => {
             }
           });
       });
+  } else {
+    bot.sendMessage(id, ` syntax error, check your url`);
   }
 });
 
