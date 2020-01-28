@@ -57,7 +57,7 @@ bot.onText(/\/ssl/, msg => {
     });
 });
 
-bot.onText(/\/OnlyBadResponse/, async msg => {
+bot.onText(/\/onlybad/, async msg => {
   urls = [];
   clearInterval(interval);
   getFunctionsCallsNumber++;
@@ -75,13 +75,18 @@ bot.onText(/\/OnlyBadResponse/, async msg => {
   };
 
   if (getFunctionsCallsNumber === 1) {
+    
     await getFunc();
+    await bot.sendMessage(
+      id,
+      ` /onlybad STARTED`
+    );
   } else if (getFunctionsCallsNumber > 1) {
     await clearInterval(interval);
     await getFunc();
     await bot.sendMessage(
       id,
-      `OTHER COMMANDS STOPPED, /OnlyBadResponse IS RUNNING`
+      `OTHER COMMANDS STOPPED, /onlybad IS RUNNING`
     );
   }
 });
@@ -165,7 +170,7 @@ bot.onText(/\/stop/, msg => {
   const { id } = msg.chat;
   clearInterval(interval);
   console.log(interval._idleTimeout);
-  bot.sendMessage(id, `stopped, rerun: /get`);
+  bot.sendMessage(id, `ALL COMMANDS STOPPED`);
 });
 
 bot.onText(/\/delurl (.+)/, (msg, [source, match]) => {
