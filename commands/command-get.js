@@ -27,7 +27,7 @@ function get(id, urls, bot) {
           );
           bot.sendMessage(
             id,
-            `status code of ${web.url} is ${response.statusCode}, duration: ${response.elapsedTime} ms`,
+            `Status code of ${web.url} is ${response.statusCode}, duration: ${response.elapsedTime} ms`,
             {
               disable_web_page_preview: true
             }

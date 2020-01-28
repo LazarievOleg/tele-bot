@@ -19,6 +19,7 @@
     "node-html-to-image": "^1.1.0",
     "node-telegram-bot-api": "^0.40.0",
     "nodemon": "^2.0.2",
-    "pg": "^7.17.0"
+    "pg": "^7.17.0",
+    "whois-json": "^2.0.4"
   }
 }

@@ -1,20 +1,14 @@
 const sslCertificate = require("get-ssl-certificate");
-// async getSSLCertificateAsync(url) {
-//   url = url.replace("http://", "");
 
-//   return await sslCertificate.get(url);
-// },
-
-function getSsl(id, sslUrls, bot) {
-  sslUrls.forEach(url => {
+async function getSsl(id, sslUrls, bot) {
+  sslUrls.forEach(async url => {
     const urlSsl = url.replace("http://", "");
-
-    sslCertificate
+    await sslCertificate
       .get(urlSsl)
       .then(certificate => {
         bot.sendMessage(
           id,
-          `ssl certificate for ${url} expires ${certificate.valid_to} `,
+          `SSL certificate for ${url} expires ${certificate.valid_to} `,
           {
             disable_web_page_preview: true
           }
