@@ -84,7 +84,7 @@ bot.onText(/\/onlybad (.+)/, async (msg, [source, email]) => {
 
     if (getFunctionsCallsNumber === 1) {
       await getFunc();
-      await bot.sendMessage(id, ` /onlybad STARTED`);
+      await bot.sendMessage(id, ` /onlybad STARTED ... `);
     } else if (getFunctionsCallsNumber > 1) {
       await clearInterval(interval);
       await getFunc();
