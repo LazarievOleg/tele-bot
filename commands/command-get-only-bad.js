@@ -1,7 +1,9 @@
 const request = require("request");
 const { chartDurationData } = require("../db-helper/db-helper");
+const sendEmail =  require('../send-email')
 
-async function getOnlyBadResponse(id, urls, bot) {
+
+async function getOnlyBadResponse(id, urls, bot, email) {
   urls.forEach(async web => {
     console.log(web);
     await request(
@@ -28,6 +30,9 @@ async function getOnlyBadResponse(id, urls, bot) {
                 disable_web_page_preview: true
               }
             );
+              // send email with bad status code info
+              await sendEmail(id, email, web.url, response.statusCode)
+
           }
         } else {
           await bot.sendMessage(

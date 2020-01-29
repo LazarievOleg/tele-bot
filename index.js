@@ -4,8 +4,13 @@ const help = require("./helpers");
 const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
 const db = require("./db-helper/db-helper.js");
 const getChartImg = require("./charts/average-duration-chart");
-const { get, getSsl, getOnlyBadResponse, quickGet, myDns } = require("./commands");
-
+const {
+  get,
+  getSsl,
+  getOnlyBadResponse,
+  quickGet,
+  myDns
+} = require("./commands");
 
 const express = require("express");
 const app = express();
@@ -57,38 +62,34 @@ bot.onText(/\/ssl/, msg => {
     });
 });
 
-bot.onText(/\/onlybad/, async msg => {
-  urls = [];
-  clearInterval(interval);
-  getFunctionsCallsNumber++;
+bot.onText(/\/onlybad (.+)/, async (msg, [source, email]) => {
+  let parsedEmail = email.match(/\S+@\S+\.\S+/);
+  parsedEmail != null ? parsedEmail = parsedEmail.toString() : parsedEmail;
+  
+    urls = [];
+    clearInterval(interval);
+    getFunctionsCallsNumber++;
 
-  const { id } = msg.chat;
-  const getFunc = async () => {
-    const dbData = await (await db.selectUrls(`chat_id = ${id}`)).rows;
-    dbData.map(each => urls.push({ url: each.url, timeout: each.timeout }));
-    const timeout = await dbData[0].timeout;
-    await getOnlyBadResponse(id, urls, bot);
+    const { id } = msg.chat;
+    const getFunc = async () => {
+      const dbData = await (await db.selectUrls(`chat_id = ${id}`)).rows;
+      dbData.map(each => urls.push({ url: each.url, timeout: each.timeout }));
+      const timeout = await dbData[0].timeout;
+      await getOnlyBadResponse(id, urls, bot, parsedEmail);
 
-    interval = setInterval(async () => {
-      await getOnlyBadResponse(id, urls, bot);
-    }, timeout);
-  };
+      interval = setInterval(async () => {
+        await getOnlyBadResponse(id, urls, bot, parsedEmail);
+      }, timeout);
+    };
 
-  if (getFunctionsCallsNumber === 1) {
-    
-    await getFunc();
-    await bot.sendMessage(
-      id,
-      ` /onlybad STARTED`
-    );
-  } else if (getFunctionsCallsNumber > 1) {
-    await clearInterval(interval);
-    await getFunc();
-    await bot.sendMessage(
-      id,
-      `OTHER COMMANDS STOPPED, /onlybad IS RUNNING`
-    );
-  }
+    if (getFunctionsCallsNumber === 1) {
+      await getFunc();
+      await bot.sendMessage(id, ` /onlybad STARTED`);
+    } else if (getFunctionsCallsNumber > 1) {
+      await clearInterval(interval);
+      await getFunc();
+      await bot.sendMessage(id, `OTHER COMMANDS STOPPED, /onlybad IS RUNNING`);
+    }
 });
 
 bot.onText(/\/quickget (.+)/, async (msg, [source, url]) => {
@@ -98,7 +99,7 @@ bot.onText(/\/quickget (.+)/, async (msg, [source, url]) => {
 
 bot.onText(/\/domaineexpiration/, async (msg, [source, url]) => {
   const { id } = msg.chat;
-  myDns(id,bot)
+  myDns(id, bot);
 });
 
 bot.onText(/\/get/, msg => {
@@ -146,7 +147,9 @@ bot.onText(/\/start/, msg => {
 
   */get* - start getting status codes
 
-  */OnlyBadResponse* - start getting status codes, but receive notification only when status code not equal 200
+  */onlybad your_email* - start getting status codes, but receive notification only when status code not equal 200;
+   /onlybad your@email.com - receive notification in bot and email;
+   /onlybad no email - receive notification only in bot;
 
   */stop* - stop getting status codes
 

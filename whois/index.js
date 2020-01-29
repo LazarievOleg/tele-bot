@@ -25,7 +25,7 @@ async function getWhoIs(id, url, bot) {
     ? (updatedDate = "no data for Updated/Modified Date ")
     : updatedDate;
 
-  const dnsInfo = `DNS INFO FOR ${url} : \n creation date: ${creationDate} \n expiration date: ${expirationDate} \n modified date: ${updatedDate}`;
+  const dnsInfo = `DOMAIN INFO FOR ${url} : \n creation date: ${creationDate} \n expiration date: ${expirationDate} \n modified date: ${updatedDate}`;
   return dnsInfo;
 }
 

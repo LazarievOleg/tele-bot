@@ -7,7 +7,8 @@ const client = new Client({
   // password: "docker",
   // port: process.env.PSQL_PORT_5432_TCP_PORT || 6588
 
-  connectionString: // heroku pg database
+  // heroku pg database
+  connectionString:
     "postgres://sardsgvrvqwefo:b04097874f1e1e300ea19608290aee948f8d4f4fefe255041535618d976853e1@ec2-46-137-91-216.eu-west-1.compute.amazonaws.com:5432/d4ubig0sjv12v1",
   ssl: true
 });
@@ -83,6 +84,24 @@ module.exports = {
       .then(DBResponse => {
         return DBResponse.rows;
       });
+  },
+
+   insertEmail(chatId, email) {
+    return client.query(
+      `INSERT INTO user_email (chat_id, email) VALUES (${chatId}, '${email}') RETURNING *`
+    );
+  },
+
+   selectEmail(chatId) {
+    return client.query(
+      `SELECT email FROM user_email WHERE chat_id = ${chatId}`
+    );
+  },
+
+   updateEmail(chatId, email) {
+    return client.query(
+      `UPDATE user_email SET email = '${email}' WHERE chat_id = ${chatId} RETURNING *`
+    );
   }
 };
 
@@ -100,3 +119,10 @@ module.exports = {
 //   duration bigserial NOT NULL,
 //   date_added  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 //    );
+
+// CREATE TABLE user_email (
+//   id bigserial primary key,
+//   chat_id bigserial NOT NULL,
+//   email text NOT NULL,
+//   date_added  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+//   );
