@@ -96,7 +96,7 @@ bot.onText(/\/quickget (.+)/, async (msg, [source, url]) => {
   await quickGet(id, url, bot);
 });
 
-bot.onText(/\/mydns/, async (msg, [source, url]) => {
+bot.onText(/\/domaineexpiration/, async (msg, [source, url]) => {
   const { id } = msg.chat;
   myDns(id,bot)
 });
@@ -156,7 +156,7 @@ bot.onText(/\/start/, msg => {
 
   */delurl* - remove URL from your list, example: /delurl google.com
 
-  */mydns* - *experimental feature* -  return DNS info for all your URLS 
+  */domaineexpiration* - *experimental feature* -  return domain expiration date info for all your URLS 
 
   */average* - return png with average requests duration bar chart
   `;
