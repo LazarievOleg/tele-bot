@@ -25,3 +25,6 @@ HOW IT WORKS
   /domaineexpiration - experimental feature -  return domain expiration date info for all your URLS 
 
   /average - return png with average requests duration bar chart
+
+![bot-pic1](https://i.ibb.co/T4ZVWSF/photo-2020-07-19-18-34-44.jpg)
+![bot-pic2](https://i.ibb.co/y5LkSPK/photo-2020-07-19-18-34-52.jpg)
