@@ -1,7 +1,7 @@
 process.env.NTBA_FIX_319 = 1; ///fix telegram api error with deprecated callback
 const telegramBot = require("node-telegram-bot-api");
 const help = require("./helpers");
-const token = "1048847285:AAF-i8fWvbMqpZOTPYld8-7Cuyuy8QOBNaQ";
+const token = "token here";
 const db = require("./db-helper/db-helper.js");
 const getChartImg = require("./charts/average-duration-chart");
 const {
